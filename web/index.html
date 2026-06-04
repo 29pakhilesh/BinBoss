@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1"
+    />
+    <meta name="theme-color" content="#0f766e" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>BinBoss — Smart Waste Sorting</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script>
+      (function () {
+        var t = localStorage.getItem("binboss-theme");
+        if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="app-bg" aria-hidden="true">
+      <canvas id="live-bg" class="app-bg__canvas"></canvas>
+      <div class="app-bg__vignette"></div>
+    </div>
+    <div class="app">
+      <header class="header card">
+        <div class="header__brand">
+          <h1 class="header__title">Bin<span>Boss</span></h1>
+          <p class="header__sub">Intelligent waste classification</p>
+        </div>
+        <div class="header__actions">
+          <div id="status" class="pill">
+            <span class="pill__dot"></span>
+            <span class="status-text">Connecting…</span>
+          </div>
+          <button
+            type="button"
+            id="theme-toggle"
+            class="theme-toggle"
+            aria-label="Toggle dark mode"
+            aria-pressed="false"
+            title="Day / night mode"
+          >
+            <span class="theme-toggle__track" aria-hidden="true">
+              <span class="theme-toggle__scene theme-toggle__scene--day">
+                <span class="theme-toggle__cloud"></span>
+                <span class="theme-toggle__cloud theme-toggle__cloud--b"></span>
+              </span>
+              <span class="theme-toggle__scene theme-toggle__scene--night">
+                <span class="theme-toggle__star"></span>
+                <span class="theme-toggle__star theme-toggle__star--2"></span>
+                <span class="theme-toggle__star theme-toggle__star--3"></span>
+              </span>
+              <span class="theme-toggle__knob">
+                <span class="theme-toggle__face theme-toggle__face--sun"></span>
+                <span class="theme-toggle__face theme-toggle__face--moon"></span>
+              </span>
+            </span>
+          </button>
+        </div>
+      </header>
+
+      <section class="hero">
+        <div class="bin-strip" id="bin-strip" aria-hidden="true"></div>
+        <p class="hero__tagline" id="hero-joke"></p>
+      </section>
+
+      <div id="error" class="alert" role="alert"></div>
+
+      <section class="card search search--sticky" aria-label="Sort an item">
+        <label class="label" for="item-input">What are you throwing away?</label>
+        <form id="search-form" class="search__row">
+          <div class="search__field">
+            <input
+              id="item-input"
+              class="search__input"
+              type="text"
+              placeholder="Type, mic, or camera…"
+              autocomplete="off"
+              autocapitalize="sentences"
+              enterkeyhint="go"
+              maxlength="500"
+            />
+            <button
+              type="button"
+              id="btn-camera"
+              class="btn-voice"
+              aria-label="Scan item with camera"
+              title="Camera scan"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+            </button>
+            <button
+              type="button"
+              id="btn-voice"
+              class="btn-voice"
+              aria-label="Speak what you are throwing away"
+              title="Voice input"
+            >
+              <svg class="icon-mic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/>
+                <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v3M8 22h8"/>
+              </svg>
+              <span class="btn-voice__pulse" aria-hidden="true"></span>
+            </button>
+          </div>
+          <button id="btn-sort" class="btn btn--primary btn--sort" type="submit">
+            <span class="btn--sort__label">Sort</span>
+          </button>
+        </form>
+        <div class="input-actions" aria-hidden="true">
+          <span class="input-actions__hint">Camera · Mic · Type</span>
+        </div>
+        <input type="file" id="photo-input" accept="image/*" capture="environment" hidden />
+        <p id="voice-hint" class="voice-hint" hidden></p>
+        <div id="examples" class="chips"></div>
+      </section>
+
+      <div class="layout">
+        <main id="results-box" class="card results state-idle" tabindex="-1">
+          <div class="results__idle state-panel">
+            <div class="results__idle-bins" id="idle-bin-icons" aria-hidden="true"></div>
+            <h2>Ready when you are</h2>
+            <p id="idle-hint">Type, speak, or scan with the camera — we'll pick the right bin.</p>
+          </div>
+
+          <div class="results__loading state-panel">
+            <div class="spinner" aria-hidden="true"></div>
+            <p id="loading-msg">Sorting…</p>
+          </div>
+
+          <div class="results__answer state-panel">
+            <div class="verdict" id="verdict-banner">
+              <div class="verdict__icon" id="verdict-dustbin"></div>
+              <div class="verdict__main">
+                <span class="verdict__label">Put it in</span>
+                <h2 id="result-bin-name">Recyclable</h2>
+                <p class="verdict__joke" id="verdict-joke"></p>
+              </div>
+              <span class="verdict__pill" id="verdict-color-tag">Blue bin</span>
+            </div>
+
+            <div class="answer-body">
+              <div class="answer-row">
+                <span class="answer-row__label">Item</span>
+                <span class="answer-row__value" id="result-item"></span>
+              </div>
+              <div id="result-badges" class="badges"></div>
+              <div class="traits-grid">
+                <div class="trait-card">
+                  <span class="trait-card__label">Compostable</span>
+                  <span class="trait-card__hint">Fits compost / organic bin</span>
+                  <span class="trait-card__value" id="trait-compostable">—</span>
+                </div>
+                <div class="trait-card">
+                  <span class="trait-card__label">Decomposable</span>
+                  <span class="trait-card__hint">Breaks down naturally over time</span>
+                  <span class="trait-card__value" id="trait-decomposable">—</span>
+                </div>
+              </div>
+              <div class="answer-meta">
+                <span>Confidence</span>
+                <strong><span id="confidence-label">high</span> · <span id="confidence-pct">92</span>%</strong>
+              </div>
+              <div class="answer-block">
+                <h3>Why this bin?</h3>
+                <p id="result-reason"></p>
+              </div>
+              <div class="answer-block answer-block--tip">
+                <h3>Tip</h3>
+                <p id="result-tip"></p>
+              </div>
+            </div>
+
+            <p id="reset-countdown" class="countdown"></p>
+            <button type="button" id="btn-sort-again" class="btn btn--ghost btn--block">Sort another item</button>
+          </div>
+        </main>
+
+        <aside class="card bins" aria-label="Bin reference">
+          <div class="bins__head">
+            <h2 class="bins__title">Your bins</h2>
+            <p class="bins__hint">Highlighted = last match</p>
+          </div>
+          <div id="bin-list" class="bins__list"></div>
+        </aside>
+      </div>
+    </div>
+
+    <div id="camera-modal" class="camera-modal" hidden aria-hidden="true">
+      <div class="camera-modal__backdrop" data-close-camera></div>
+      <div class="camera-modal__panel card" role="dialog" aria-labelledby="camera-title" aria-modal="true">
+        <div class="camera-modal__safe">
+        <header class="camera-modal__head">
+          <h2 id="camera-title">Scan your item</h2>
+          <button type="button" class="camera-modal__close" data-close-camera aria-label="Close">&times;</button>
+        </header>
+        <p class="camera-modal__hint">Point the camera at one item. Good light helps.</p>
+        <div class="camera-modal__preview">
+          <video id="camera-video" playsinline muted autoplay></video>
+          <canvas id="camera-canvas" hidden></canvas>
+          <img id="camera-preview-img" class="camera-modal__still" hidden alt="Captured item" />
+        </div>
+        <div class="camera-modal__actions">
+          <button type="button" id="btn-capture" class="btn btn--primary">Capture &amp; sort</button>
+          <button type="button" id="btn-upload-photo" class="btn btn--ghost">Upload photo</button>
+          <button type="button" id="btn-retake" class="btn btn--ghost" hidden>Retake</button>
+        </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/static/live-bg.js"></script>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
