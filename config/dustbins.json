@@ -1,0 +1,67 @@
+{
+  "bins": [
+    {
+      "id": "recyclable",
+      "name": "Recyclable",
+      "color": "blue",
+      "accepts": [
+        "clean paper and cardboard",
+        "plastic bottles and containers (rinsed)",
+        "metal cans and foil",
+        "glass bottles and jars"
+      ],
+      "reject": ["food-soiled paper", "plastic bags/film", "broken glass mixed with trash"]
+    },
+    {
+      "id": "organic",
+      "name": "Organic / Compost (compostable & decomposable)",
+      "color": "green",
+      "accepts": [
+        "compostable food and yard waste",
+        "naturally decomposable organics (fruit peels, leaves)",
+        "tea bags and coffee grounds",
+        "food-soiled paper (if your city allows)"
+      ],
+      "reject": ["meat and dairy (check local rules)", "plastic-lined cups", "pet waste"]
+    },
+    {
+      "id": "general",
+      "name": "General Waste (Non-recyclable)",
+      "color": "black",
+      "accepts": [
+        "styrofoam",
+        "dirty or mixed-material packaging",
+        "diapers and hygiene products",
+        "broken ceramics and mirrors",
+        "plastic bags and wrap"
+      ],
+      "reject": ["batteries", "electronics", "hazardous liquids"]
+    },
+    {
+      "id": "hazardous",
+      "name": "Hazardous / Special Collection",
+      "color": "red",
+      "accepts": [
+        "batteries",
+        "light bulbs (CFL/LED)",
+        "paint and solvents",
+        "medicines (pharmacy take-back)",
+        "chemical cleaners"
+      ],
+      "reject": ["regular trash — never pour chemicals down drain"]
+    },
+    {
+      "id": "ewaste",
+      "name": "E-waste / Electronics",
+      "color": "orange",
+      "accepts": [
+        "phones, cell phones, mobiles, smartphones, and tablets",
+        "cables and chargers",
+        "small appliances",
+        "laptops and monitors (drop-off)"
+      ],
+      "reject": ["batteries alone — often go to hazardous bin first"]
+    }
+  ],
+  "locale_note": "Edit this file to match your city's bin colors and rules."
+}
