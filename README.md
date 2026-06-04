@@ -5,7 +5,7 @@
 <h1 align="center">BinBoss</h1>
 
 <p align="center">
-  <strong>A local AI waste-sorting assistant for deciding the right dustbin from text, voice, or camera input.</strong>
+  <strong>A local AI waste-sorting assistant for deciding the right dustbin from text, voice, camera input, or spoken results.</strong>
 </p>
 
 <p align="center">
@@ -28,7 +28,7 @@
 
 ## Overview
 
-BinBoss helps people sort everyday waste into the correct bin using a local Ollama model. It ships with a polished web UI, camera-based image classification, microphone-friendly input in the browser, and a command-line workflow for quick checks.
+BinBoss helps people sort everyday waste into the correct bin using a local Ollama model. It ships with a polished web UI, camera-based image classification, microphone-friendly input, spoken verdicts in the browser, and a command-line workflow for quick checks.
 
 The app runs locally by default, so it is free to use, does not require cloud API keys, and can be adapted to your city or campus bin rules by editing one JSON config file.
 
@@ -38,6 +38,7 @@ The app runs locally by default, so it is free to use, does not require cloud AP
 | --- | --- |
 | Local AI classification | Uses Ollama text models to classify typed item descriptions. |
 | Camera sorting | Upload or capture an image and classify the visible waste item with a local vision model. |
+| Gentle voice assistant | Reads the final bin verdict aloud, with a toggle and a "Hear again" button. |
 | Configurable bins | Edit `config/dustbins.json` to match local colors, names, accepted items, and rejection rules. |
 | Web + CLI | Use the browser UI, one-shot CLI mode, or an interactive terminal session. |
 | LAN mode | Run the UI on your home Wi-Fi so phones and tablets can connect. |
@@ -108,6 +109,18 @@ http://192.168.x.x:8080
 ```
 
 Your phone and computer need to be on the same network.
+
+## Browser Voice Features
+
+BinBoss supports both voice input and voice output in browsers that expose the Web Speech APIs.
+
+| Control | What it does |
+| --- | --- |
+| Mic button | Lets you speak the item you want to sort. |
+| Speaker toggle | Turns spoken verdicts on or off and saves the choice in the browser. |
+| Hear again | Replays the most recent spoken sorting result. |
+
+Spoken verdicts are intentionally short and polite, so the app can be used hands-free while sorting real items.
 
 ## CLI Usage
 

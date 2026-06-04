@@ -74,6 +74,8 @@ const els = {
   html: document.documentElement,
   status: $("#status"),
   themeToggle: $("#theme-toggle"),
+  btnSpeakToggle: $("#btn-speak-toggle"),
+  btnHearAgain: $("#btn-hear-again"),
   heroJoke: $("#hero-joke"),
   idleHint: $("#idle-hint"),
   form: $("#search-form"),
@@ -121,6 +123,11 @@ let recognition = null;
 let voiceListening = false;
 let voiceAutoSort = false;
 let voiceSessionRequested = false;
+let speakEnabled = localStorage.getItem("binboss-speak") !== "false";
+let lastSpokenResult = null;
+let speechVoices = [];
+let speakDelayTimer = null;
+let preferredLadyVoice = null;
 let loadingTick = null;
 let visionAvailable = false;
 let cameraStream = null;
@@ -303,6 +310,9 @@ function setHeroJoke() {
 }
 
 function resetToStart() {
+  stopSpeech();
+  if (els.btnHearAgain) els.btnHearAgain.hidden = true;
+  lastSpokenResult = null;
   clearResetTimer();
   clearBinHighlight();
   setResultsState("idle");
@@ -321,6 +331,193 @@ function scrollToResults() {
   requestAnimationFrame(() => {
     els.resultsBox.scrollIntoView({ behavior: "smooth", block: "start" });
   });
+}
+
+function speechSupported() {
+  return typeof window !== "undefined" && "speechSynthesis" in window;
+}
+
+function stopSpeech() {
+  if (speakDelayTimer) {
+    clearTimeout(speakDelayTimer);
+    speakDelayTimer = null;
+  }
+  if (!speechSupported()) return;
+  window.speechSynthesis.cancel();
+}
+
+const POLITE_BIN = {
+  recyclable: {
+    plain: [
+      "That belongs in the blue recycling bin, please.",
+      "I'd gently suggest the blue bin for recycling.",
+      "Please pop that in the blue recycling bin. Thank you.",
+    ],
+    withItem: [
+      "For {item}, the blue recycling bin would be just right, please.",
+      "I'd place {item} in the blue bin, if you don't mind.",
+      "{item} is perfect for the blue recycling bin, please.",
+    ],
+  },
+  organic: {
+    plain: [
+      "Please use the green compost bin for that.",
+      "I'd pop that in the green organic bin, gently.",
+      "The green bin is best for compost, please.",
+    ],
+    withItem: [
+      "For {item}, the green compost bin is lovely, please.",
+      "{item} belongs in the green organic bin, thank you.",
+      "I'd tuck {item} into the green bin, if that's alright.",
+    ],
+  },
+  general: {
+    plain: [
+      "Please use the black general waste bin for that.",
+      "I'd suggest the black bin for general rubbish, please.",
+      "That goes in the black bin, thank you.",
+    ],
+    withItem: [
+      "For {item}, the black general waste bin, please.",
+      "{item} can go in the black bin, if you don't mind.",
+      "I'd place {item} in the black bin, gently.",
+    ],
+  },
+  hazardous: {
+    plain: [
+      "Please be careful. That needs the red hazardous bin.",
+      "I'd use the special red bin for that, please. Handle with care.",
+      "Kindly place that in the red hazardous bin only.",
+    ],
+    withItem: [
+      "For {item}, please use the red hazardous bin only.",
+      "{item} should go in the red bin, carefully, please.",
+      "I'd put {item} in the red hazardous bin, with care.",
+    ],
+  },
+  ewaste: {
+    plain: [
+      "Please use the orange e-waste bin for electronics.",
+      "I'd suggest the orange bin for gadgets and batteries, please.",
+      "The orange bin is right for electronic waste, thank you.",
+    ],
+    withItem: [
+      "For {item}, the orange e-waste bin, please.",
+      "{item} belongs in the orange electronics bin, gently.",
+      "I'd place {item} in the orange bin, if you don't mind.",
+    ],
+  },
+};
+
+const SPEAK_NOT_TRASH = [
+  "I'm sorry, that doesn't seem to be waste. No bin needed, dear.",
+  "Gently speaking, that's not something for the bins, please.",
+  "I wouldn't sort that as trash. Perhaps try a real item?",
+  "That's not quite waste, love. The bins aren't sure what to do.",
+];
+
+function pickKarenVoice() {
+  if (preferredLadyVoice) return preferredLadyVoice;
+  if (!speechVoices.length) speechVoices = window.speechSynthesis.getVoices();
+  const karen = speechVoices.find((v) => v.name.toLowerCase().includes("karen"));
+  preferredLadyVoice = karen || null;
+  return preferredLadyVoice;
+}
+
+function speakableItem(item) {
+  const s = (item || "").trim().replace(/\s+/g, " ");
+  if (!s || s.length > 36) return null;
+  return s;
+}
+
+function politeBinLine(binId, item) {
+  const pack = POLITE_BIN[binId] || POLITE_BIN.general;
+  if (item) {
+    const tpl = pickRandom(pack.withItem);
+    return tpl.replace(/\{item\}/g, item);
+  }
+  return pickRandom(pack.plain);
+}
+
+function buildSpeakLines(data) {
+  if (data.humorous) {
+    return [pickRandom(SPEAK_NOT_TRASH)];
+  }
+  const item = speakableItem(data.item);
+  return [politeBinLine(data.bin_id || "general", item)];
+}
+
+function speakQueue(lines) {
+  if (!lines.length) return;
+  const voice = pickKarenVoice();
+  let index = 0;
+
+  const speakNext = () => {
+    if (index >= lines.length) return;
+    const line = lines[index];
+    index += 1;
+    const utter = new SpeechSynthesisUtterance(line);
+    utter.rate = 0.68;
+    utter.pitch = 1.04;
+    utter.volume = 0.92;
+    if (voice) utter.voice = voice;
+    utter.onend = () => {
+      if (index < lines.length) {
+        window.setTimeout(speakNext, 520);
+      }
+    };
+    window.speechSynthesis.speak(utter);
+  };
+
+  speakNext();
+}
+
+function updateSpeakToggleUi() {
+  if (!els.btnSpeakToggle) return;
+  els.btnSpeakToggle.setAttribute("aria-pressed", speakEnabled ? "true" : "false");
+  els.btnSpeakToggle.setAttribute(
+    "aria-label",
+    speakEnabled ? "Turn off gentle voice assistant" : "Turn on gentle voice assistant"
+  );
+  els.btnSpeakToggle.title = speakEnabled
+    ? "Soft voice assistant on"
+    : "Soft voice assistant off";
+  els.btnSpeakToggle.classList.toggle("is-off", !speakEnabled);
+}
+
+function speakVerdict(data) {
+  if (!speechSupported() || !speakEnabled || !data) return;
+  lastSpokenResult = data;
+  stopSpeech();
+  const lines = buildSpeakLines(data);
+  speakDelayTimer = window.setTimeout(() => {
+    speakDelayTimer = null;
+    speakQueue(lines);
+  }, 150);
+  if (els.btnHearAgain) {
+    els.btnHearAgain.hidden = false;
+  }
+}
+
+function initSpeech() {
+  if (!speechSupported()) {
+    speakEnabled = false;
+    if (els.btnSpeakToggle) els.btnSpeakToggle.hidden = true;
+    updateSpeakToggleUi();
+    return;
+  }
+  const loadVoices = () => {
+    speechVoices = window.speechSynthesis.getVoices();
+    preferredLadyVoice = null;
+    pickKarenVoice();
+  };
+  loadVoices();
+  window.speechSynthesis.addEventListener("voiceschanged", loadVoices);
+  updateSpeakToggleUi();
+}
+
+function announceResult(data) {
+  speakVerdict(data);
 }
 
 function renderHumorous(data) {
@@ -352,6 +549,7 @@ function renderHumorous(data) {
   setResultsState("result");
   scheduleAutoReset();
   scrollToResults();
+  announceResult(data);
 }
 
 function renderResult(data) {
@@ -392,6 +590,8 @@ function renderResult(data) {
   highlightBin(data.bin_id);
   setResultsState("result");
   scheduleAutoReset();
+  scrollToResults();
+  announceResult(data);
 }
 
 function startLoadingProgress(isCamera = false) {
@@ -439,6 +639,7 @@ async function resizeImageForUpload(blob, maxDim = 768) {
 
 async function classify(item) {
   stopVoice();
+  stopSpeech();
   hideError();
   clearResetTimer();
   clearBinHighlight();
@@ -468,6 +669,7 @@ async function classify(item) {
 
 async function classifyImage(blob) {
   stopVoice();
+  stopSpeech();
   closeCameraModal();
   hideError();
   clearResetTimer();
@@ -536,6 +738,22 @@ els.form.addEventListener("submit", (e) => {
 els.btnAgain.addEventListener("click", resetToStart);
 
 els.themeToggle.addEventListener("click", toggleTheme);
+
+if (els.btnSpeakToggle) {
+  els.btnSpeakToggle.addEventListener("click", () => {
+    speakEnabled = !speakEnabled;
+    localStorage.setItem("binboss-speak", speakEnabled ? "true" : "false");
+    updateSpeakToggleUi();
+    if (!speakEnabled) stopSpeech();
+    else if (lastSpokenResult) speakVerdict(lastSpokenResult);
+  });
+}
+
+if (els.btnHearAgain) {
+  els.btnHearAgain.addEventListener("click", () => {
+    if (lastSpokenResult) speakVerdict(lastSpokenResult);
+  });
+}
 
 function getSpeechRecognition() {
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
@@ -816,6 +1034,7 @@ function initCamera() {
 
 initVoice();
 initCamera();
+initSpeech();
 
 initTheme();
 setHeroJoke();

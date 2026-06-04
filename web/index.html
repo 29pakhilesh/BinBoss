@@ -42,6 +42,24 @@
           </div>
           <button
             type="button"
+            id="btn-speak-toggle"
+            class="btn-speak-toggle"
+            aria-pressed="true"
+            aria-label="Gentle voice assistant"
+            title="Polite voice assistant"
+          >
+            <svg class="icon-speak-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+              <path d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14"/>
+            </svg>
+            <svg class="icon-speak-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+              <line x1="23" y1="9" x2="17" y2="15"/>
+              <line x1="17" y1="9" x2="23" y2="15"/>
+            </svg>
+          </button>
+          <button
+            type="button"
             id="theme-toggle"
             class="theme-toggle"
             aria-label="Toggle dark mode"
@@ -131,7 +149,7 @@
           <div class="results__idle state-panel">
             <div class="results__idle-bins" id="idle-bin-icons" aria-hidden="true"></div>
             <h2>Ready when you are</h2>
-            <p id="idle-hint">Type, speak, or scan with the camera — we'll pick the right bin.</p>
+            <p id="idle-hint">Type, speak, or scan — a gentle voice will tell you which bin to use.</p>
           </div>
 
           <div class="results__loading state-panel">
@@ -183,7 +201,12 @@
             </div>
 
             <p id="reset-countdown" class="countdown"></p>
-            <button type="button" id="btn-sort-again" class="btn btn--ghost btn--block">Sort another item</button>
+            <div class="results__actions">
+              <button type="button" id="btn-hear-again" class="btn btn--ghost" hidden>
+                Hear again
+              </button>
+              <button type="button" id="btn-sort-again" class="btn btn--ghost btn--block">Sort another item</button>
+            </div>
           </div>
         </main>
 

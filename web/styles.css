@@ -218,6 +218,54 @@ body {
 .pill.ok { color: var(--accent); }
 .pill.error .pill__dot { background: #ef4444; }
 
+.btn-speak-toggle {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--accent);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.btn-speak-toggle:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.btn-speak-toggle.is-off {
+  color: var(--muted);
+}
+
+.btn-speak-toggle .icon-speak-off {
+  display: none;
+}
+
+.btn-speak-toggle.is-off .icon-speak-on {
+  display: none;
+}
+
+.btn-speak-toggle.is-off .icon-speak-off {
+  display: block;
+}
+
+.results__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.results__actions .btn--block {
+  width: 100%;
+}
+
 .theme-toggle {
   --toggle-w: 52px;
   --toggle-h: 28px;
@@ -1173,6 +1221,11 @@ body.camera-open {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .btn-speak-toggle {
+    width: var(--touch);
+    height: var(--touch);
   }
 
   .theme-toggle {
